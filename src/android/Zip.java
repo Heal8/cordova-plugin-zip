@@ -50,11 +50,36 @@ public class Zip extends CordovaPlugin {
         return a | b << 8 | c << 16 | d << 24;
     }
 
+    private String adjustFilePath(String filePath) {
+        String cdvfilePart = "/__cdvfile_files__/";
+        if (filePath.startsWith("http:") || filePath.startsWith("https:")) {
+            int foundIndex = filePath.indexOf(cdvfilePart);
+            if (foundIndex > 0) {
+                String localFilesDir = this.cordova.getActivity().getFilesDir().getAbsolutePath();
+                String adjustedPath = localFilesDir + filePath.substring(foundIndex + cdvfilePart.length() - 1);
+                return adjustedPath;
+            } else {
+                return filePath;
+            }
+        } else if (filePath.startsWith("file:")) {
+            int foundIndex = filePath.indexOf(cdvfilePart);
+            if (foundIndex > 0) {
+                String localFilesDir = this.cordova.getActivity().getFilesDir().getAbsolutePath();
+                String adjustedPath = filePath.replaceAll(cdvfilePart, localFilesDir + "/");
+                return adjustedPath;
+            } else {
+                return filePath;
+            }
+        } else {
+            return filePath;
+        }
+    }
+
     private void unzipSync(CordovaArgs args, CallbackContext callbackContext) {
         InputStream inputStream = null;
         try {
-            String zipFileName = args.getString(0);
-            String outputDirectory = args.getString(1);
+            String zipFileName = adjustFilePath(args.getString(0));
+            String outputDirectory = adjustFilePath(args.getString(1));
 
             // Since Cordova 3.3.0 and release of File plugins, files are accessed via cdvfile://
             // Accept a path or a URI for the source zip.
